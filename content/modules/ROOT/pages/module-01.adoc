@@ -1,149 +1,319 @@
-= Building an Application with rpms
+= Building out the basics for config as code
 
-== Downloading the UBI
+[#setup]
+== Task 1 - Setting up the project
 
-In this lab, you will be installing software into the container 
-image running as an interactive application. To do this you will
-need `yum`, but do not need `systemd` for managing services within the
-container environment.  For that reason, you will be using the *Standard*
-UBI image (as opposed to the Minimal or Multi-service images).
+- In this lab, you will be creating configuration files in order to set a state on the Ansible Automation Platform.
+This requires several prerequisites.
 
-Using the "buildah from" command will download and meld the container image. This particular image we are using is the Red Hat Universal Base Image or UBI. From the ourput of the command, you will notice that we are pulling down the latest one, which is for RHEL 9. 
+- Open up the terminal in the window on the right by going to the menu, use the Terminal > New Terminal
 
-. Execute the  download the Standard UBI
-image from Red Hat's registry.
-
+- In the terminal, install our collections and containers.podman using `ansible-galaxy` command. Make sure the versions are correct.
 +
-[source,sh,role=execute]
+[source,bash,role=execute]
 ----
-buildah from registry.access.redhat.com/ubi9/ubi
+ansible-galaxy collection install infra.ee_utilities:4.0.0 infra.aap_configuration:3.1.0 containers.podman:1.16.3 community.general:10.4.0 ansible.hub:1.0.0 ansible.platform:2.5.20250213 ansible.controller:4.6.8
 ----
+
+- Further documentation for those who are interested to learn more see:
++
+* https://docs.ansible.com/ansible/devel/user_guide/collections_using.html#collections[Installing collections using cli,window=_blank]
+* https://docs.ansible.com/ansible-tower/latest/html/userguide/projects.html#collections-support[Using collections in AAP,window=_blank]
+
+
+
+[#variable_files]
+== Task 2 - Creating Variable Files
+
+**In the next few steps pay attention to the folder paths and make sure to put the files in the correct folders**
+
+- Set the `variables` to be used in the collections for use. These include hosts, usernames, and other variables that are reused in each role.
+
+- The variables are defined in the file `/home/lab-user/casc_lab/group_vars/all/auth.yml`. 
++
+[source,yaml,role=execute]
+group_vars/all/auth.yml
+
+With the following content:
+
+[source,yaml,role=execute]
+----
+aap_hostname: # This will be filed out, DO NOT CHANGE IT
+aap_username: "{{ aap_username }}"
+aap_password: "{{ aap_password }}"
+aap_validate_certs: false
+aap_request_timeout: 60
+
+ee_pull_collections_from_hub: false
+aap_service_account_username: aap_service_account
+
+ee_registry_username: "{{ aap_username }} "
+ee_registry_password: "{{ aap_password }}"
+ee_registry_dest: "{{ aap_hostname }}/config"
+
+ee_base_registry: "{{ aap_hostname }}"
+ee_base_registry_username: "{{ aap_username }}"
+ee_base_registry_password: "{{ aap_password }}"
+ee_validate_certs: false
+----
+
+- Further documentation are provided below for those who are interested to learn more:
+
+* https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html#organizing-host-and-group-variables[more about group_vars,window=_blank]
+
+
+[#inventory]
+== Task 3 - Creating our inventory file
+
+- Create your inventory file `inventory.yml`, You do not need to replace anything in this file.
++
+[source,yaml,role=execute]
+----
+---
+all:
+  children:
+    automationcontroller:
+      hosts:
+        control:
+          ansible_host: "{{ aap_hostname | regex_replace('^https://', '')  }}"
+    execution:
+      hosts:
+        localhost:
+          ansible_connection: local
+...
+----
++
+WARNING: These are hostnames and should not have 'https://', otherwise things will fail
+
+- Further documentation are provided below for those who are interested to learn more:
++
+* https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html#inventory-basics-formats-hosts-and-groups[More about inventories,window=_blank]
+* https://docs.ansible.com/ansible-tower/latest/html/userguide/inventories.html#add-source[How to use this source in AAP,window=_blank]
+
+[#vault]
+== Task 4 - Create our Vault
+
+- Create a vault file `vault.yml` and **YOU WILL NEED TO FILL THESE IN** with the provided password for AAP for each variable. Currently they are set to the description of what you should be updating them too.
++
+[source,yaml,role=execute]
+----
+---
+vault_pass: ###REPLACEME
+aap_password: ###REPLACEME
+aap_service_account_password: ###REPLACEME
+student_account: ###REPLACEME
+...
+----
++
+TIP: The easiest way to do this is have all passwords be the provided password.
++
+NOTE: For good configuration as code we recommend retrieving passwords from secure systems secret management systems (such as Hashicorp Vault).
+
+- Create a `.password` file and put your generated password in it.
++
+[source,bash,role=execute]
+----
+cat <<EOF > .password
+###REPLACEME
+EOF
+----
++
+IMPORTANT: **We do not recommend using .password files outside of lab environment** This process is just to simplify/speed up the lab.
+
+- Create an `ansible.cfg` file to point to the .password file.
++
+[source,bash,role=execute]
+----
+[defaults]
+vault_password_file=.password
+----
++
+Encrypt vault with the password in the .password file
++
+[source,bash,role=execute]
+----
+ansible-vault encrypt vault.yml
+----
+
+- Further documentation are provided below for those who are interested to learn more:
++
+* https://docs.ansible.com/ansible/latest/user_guide/vault.html[Ansible vaults,window=_blank]
+* https://ansible.readthedocs.io/projects/navigator/faq/#how-can-i-use-a-vault-password-with-ansible-navigator[Vault with navigator,window=_blank]
+
+[#organizations]
+== Task 5 - Create organizations
+
+- Create a file `group_vars/all/organizations.yml`
++
+[source,yaml,role=execute]
+----
+---
+aap_organizations:
+  - name: config_as_code
+...
+----
+
+
+- Further documentation are provided below for those who are interested to learn more:
++
+* https://github.com/redhat-cop/infra.aap_configuration/tree/devel/roles/gateway_organizations[Organizations role,window=_blank]
+
+
+[#team setup]
+== Task 6 - Create a Team
+
+- Create a file `group_vars/all/teams.yml`
++
+[source,yaml,role=execute]
+----
+---
+aap_teams:
+  - name: config as code team
+    description: config as code team
+    organization: config_as_code
+...
+----
+
+- Further documentation are provided below for those who are interested to learn more:
++
+* https://github.com/redhat-cop/infra.aap_configuration/tree/devel/roles/gateway_teams[Teams role,window=_blank]
+
+[#service_account]
+== Task 7 - Create a local service account user
+
+- Create a file `/home/lab-user/casc_lab/group_vars/all/users.yml` with the below information:
++
+[source,yaml,role=execute]
+----
+---
+aap_user_accounts:
+  - username: "{{ aap_service_account_username }}"
+    password: "{{ aap_service_account_password }}"
+    is_superuser: true
+    state: "present"
+...
+----
+
+- Further documentation are provided below for those who are interested to learn more:
++
+* https://github.com/redhat-cop/infra.aap_configuration/tree/devel/roles/gateway_users[Users role,window=_blank]
 
 [#repositories]
-== Installing Repositories
-In this lab, you are going to containerize a software package that is already
-packaged in RPM format and stored in the Extra Packages for Enterprise Linux
-(EPEL) repository.
+== Task 8 - Create Collection Repositories and Remotes
 
-Software often has requirements for prerequisite software that must be installed
-on the machine for it to work properly.  `yum` will resolve those
-dependencies for you, as long as it can locate the required packages in
-repositories defined on the machine.  The Red Hat Universal Base Image (UBI)
-downloaded in the previous step has access to some Red Hat Enterprise Linux
-repositories.  However, the target package for the lab is from EPEL.  
+- Create a file `group_vars/all/hub_repositories.yml` to create the list of community repositories and their remote counterpart.
++
+[source,yaml,role=execute]
+----
+---
+hub_collection_remotes:
+  - name: community-infra
+    url: 'https://galaxy.ansible.com/'
+    requirements:
+      - name: infra.ee_utilities
+        version: '>=4.0.0'
+      - name: infra.aap_utilities
+        version: '>=2.5.2'
+      - name: containers.podman
+        version: '>=1.13.0'
+      - name: community.general
+        version: '>=10.4.0'
+      - name: infra.aap_configuration
+        version: '>=3.1.0'
+hub_collection_repositories:
+  - name: community-infra-repo
+    description: description of community-infra repository
+    pulp_labels:
+      pipeline: approved
+    distribution:
+      state: present
+    remote: community-infra
+hub_configuration_collection_repository_sync_async_delay: 5
+hub_configuration_collection_repository_sync_async_retries: 150
+...
+----
 
-. In the command below, `buildah` is going to run a command on the
-`ubi-working-container` image.  The `--` indicates that the command should be
-executed from within the container, which means the results will be applied into
-the container image.  Lastly, you are providing the `yum` command to install a
-package that defines all of the repositories from EPEL, `epel-release-latest-9`.
+- Further documentation are provided below for those who are interested to learn more:
++
+* https://github.com/redhat-cop/infra.aap_configuration/tree/devel/roles/hub_collection_repository[Hub collection repository role,window=_blank]
+* https://github.com/redhat-cop/infra.aap_configuration/tree/devel/roles/hub_collection_remote[Hub collection remote role,window=_blank]
 
+[#playbook_create]
+== Task 9 - Create a playbook to apply the configuration
+
+- The next step is to create a playbook/file `/home/lab-user/casc_lab/playbooks/aap_config.yml` that will call the `aap_configuration` dispatch role which will apply all provided configurations in the order that they need to be created.
++
+[source,yaml,role=execute]
+----
+---
+- name: Playbook to configure ansible controller post installation
+  hosts: all
+  gather_facts: false
+  vars_files:
+    - ../vault.yml
+  connection: local
+  tasks:
+    - name: Call dispatch role
+      ansible.builtin.include_role:
+        name: infra.aap_configuration.dispatch
+...
+----
+
+- Further documentation are provided below for those who are interested to learn more:
++
+* https://github.com/redhat-cop/infra.aap_configuration/tree/devel/roles/dispatch[Dispatch role,window=_blank]
+
+== Task 10 - Check your paths
+
+- Your folder structure should look like this, check the file structure to
+make sure files are in the right levels. Run the `+tree+` command to
+verify.
 +
 [source,bash]
 ----
-buildah run ubi-working-container -- yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+.
+├── ansible.cfg
+├── group_vars
+│   └── all
+│       ├── auth.yml
+│       ├── hub_repositories.yml
+│       ├── organizations.yml
+│       ├── teams.yml
+│       └── users.yml
+├── inventory.yml
+├── playbooks
+│   └── aap_config.yml
+└── vault.yml
+
+3 directories, 9 files
 ----
 
 
-. You can verify that the above command did not install the RPM on the host system.
+[#playbook_run]
+== Task 11 - Put the playbook into action
 
+- The next step is to run the playbook, in order to do the initial setup of everything above on the Platform.
 +
-[source,bash]
+[source,bash,role=execute]
 ----
-rpm -q epel-release
+ansible-playbook playbooks/aap_config.yml -i inventory.yml -l execution
 ----
 
-NOTE: If your repository configurations are not distributed as an RPM, but instead as
-individual `.repo` files, you could use the `buildah copy` command to copy
-files from the host operating system into the container image.  You will see
-an example of using `buildah copy` later in this lab.
-
-[#software]
-== Installing Software
-
-
-. Now that the yum repositories are defined within the container, execute 
-another `yum install`, within the container, to install the target
-software: `moon-buggy`.
-
+- While the playbook is running you can go to the Automation Hub tab and peak at the Task Management to see the repository syncing process
 +
-[source,bash]
-----
-buildah run ubi-working-container -- yum -y install moon-buggy
-----
+image::module_1/hub_task.png[Hub task,125%,125%,link=self, window=blank]
 
+[#results]
+== Task 12 - Validate configuration was applied
+- Navigate to the AAP login with the provided passwords
 
-== Committing the Container Image
+In each section on the you should find the changes you have made
 
-. At this point, the container is configured.  It is time to transition from a
-working container into a committed image.  In the command below, you will use
-the `buildah` command to commit the working container to an image called:
-`moon-buggy`.
+. Org:
+. Repository:
+. User:
+. Team
 
-+
-[source,bash]
-----
-buildah commit ubi-working-container moon-buggy
-----
+== ✅ Next Challenge
 
-+
-. The output of `podman image list` should confirm the image was created.
-
-+
-[source,bash]
-----
-podman image list
-----
-
-
-== Deploy the Container
-
-Now the software has been installed and a new container image created.  It is
-time to spawn a runtime of the container image and validate the software.  The
-software we are using is a command line command.  
-
-. When you `run` the container,
-it will be in interactive (`-it`) mode, based on the `moon-buggy` container
-image and the command run interactively will be `/usr/bin/moon-buggy`.
-
-+
-[source,bash]
-----
-podman run -it moon-buggy /usr/bin/moon-buggy
-----
-
-+
-[source,textinfo]
-----
-
-<<< OUTPUT ABRIDGED >>>
-               MM     MM   OOOOO    OOOOO   NN     N
-               M M   M M  O     O  O     O  N N    N
-               M  M M  M  O     O  O     O  N  N   N
-               M   M   M  O     O  O     O  N   N  N
-               M       M  O     O  O     O  N    N N
-               M       M   OOOOO    OOOOO   N     NN
-
-                     BBBBBB   U     U   GGGGG    GGGGG   Y     Y
-                     B     B  U     U  G     G  G     G   Y   Y
-                     BBBBBB   U     U  G        G          Y Y
-                     B     B  U     U  G   GGG  G   GGG     Y
-                     B     B  U     U  G     G  G     G    Y
-                     BBBBBB    UUUUU    GGGGG    GGGGG   YY
-
-<<< OUTPUT ABRIDGED >>>
-----
-
-. You can now play the Moon Buggy game, which is a text-based version of the
-popular Moon Patrol.  When you are finished, use the `q` command to quit the
-game, which will terminate the container.
-
-+
-Alternatively, you can use `podman` to kill the running container from
-*Terminal 2*.
-
-+
-[source,bash]
-----
-podman kill $(podman ps | grep -v CONTAINER | cut -f1 -d" " )
-----
+Once you’ve completed the above tasks we will move towards doing the Controller configuration. 
