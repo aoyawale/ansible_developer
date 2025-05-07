@@ -1,0 +1,12 @@
+= Codebot
+
+Ansible code bot scans existing content collections, roles, and playbooks hosted in GitHub repositories, and proactively creates pull requests whenever best practices or quality improvement recommendations are available. 
+
+== Analyzing with Codebot
+
+ Access Code from Github[https://github.com/apps/ansible-code-bot] and configure access to the repositories to be analyzed.
+
+== Access Codebot Application
+
+https://bot.ai.ansible.redhat.com/console
+file: codebot.png

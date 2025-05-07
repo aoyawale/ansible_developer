@@ -15,5 +15,10 @@ source ansible_dev/bin/acivate
 python3 -m pip install ansible-dev-tools
 ``
 
+=== Create an Ansible Collection
+
+```
+ansible-galaxy collection init ansible_dev.my_code
+```
 
 == 
