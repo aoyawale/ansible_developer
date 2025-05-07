@@ -1,10 +1,17 @@
 = Creating Python Environments
 
-Create a python environment ````
-
-Install the Ansible Developer Tools
+== Create a python environment 
 
 ```
+python -m pip install --user virtualenv
+
+```
+
+=== Install the Ansible Developer Tools
+
+```
+virtualenv ansible_dev
+source ansible_dev/bin/acivate
 python3 -m pip install ansible-dev-tools
 ``
 
