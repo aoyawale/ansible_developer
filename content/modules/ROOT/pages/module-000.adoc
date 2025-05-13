@@ -5,7 +5,7 @@ Git is a distributed version control system that tracks versions of files. It is
 == Creating Git Project
 
 ```
-git init
+git init ansible_dev
 ```
 
 == Configuring Git
