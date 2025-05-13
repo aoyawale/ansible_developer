@@ -3,5 +3,3 @@
 Molecule project is designed to aid in the development and testing of Ansible roles.
 
 
-== Ansible Signing
-

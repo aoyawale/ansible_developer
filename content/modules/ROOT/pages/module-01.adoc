@@ -24,7 +24,15 @@ python3 -m pip install ansible-dev-tools
 === Create an Ansible Collection
 
 ```
+cd ansible_developer
 ansible-galaxy collection init ansible_dev.my_code
+```
+
+== Add collection to Git
+
+```
+git add .
+git push 
 ```
 
 == Developer Tools

@@ -5,7 +5,8 @@ Git is a distributed version control system that tracks versions of files. It is
 == Creating Git Project
 
 ```
-git init ansible_dev
+git init ansible_developer
+cd ansible_developer
 ```
 
 == Configuring Git
@@ -13,4 +14,12 @@ git init ansible_dev
 git config --global user.name "[name]"
 git config --global user.email "[email address]"
 git config --global color.ui auto
+```
+
+== Add Code to the Git Repository
+
+```
+git add .
+git commit -m "initial commit"
+git push
 ```
