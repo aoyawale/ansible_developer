@@ -6,6 +6,10 @@ Ansible code bot scans existing content collections, roles, and playbooks hosted
 
  Access Code from Github[https://github.com/apps/ansible-code-bot] and configure access to the repositories to be analyzed.
 
+== Live Example
+
+https://github.com/aoyawale/ansible_developer_code/pull/2/commits/b8bc401c79e701ef43ed7b71e75b46d116787861
+
 == Access Codebot Application
 
 https://bot.ai.ansible.redhat.com/console
