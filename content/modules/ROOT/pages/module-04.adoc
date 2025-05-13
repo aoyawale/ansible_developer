@@ -1,0 +1,8 @@
+= Adding git projects in AAP
+
+== Creating a git project
+
+Screenshot:
+
+Screenshot:
+

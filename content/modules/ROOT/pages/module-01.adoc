@@ -32,8 +32,15 @@ ansible-galaxy collection init ansible_dev.my_code
 
 ```
 git add .
+git commit -m "initial collection commit"
 git push 
 ```
+
+== Ansible Lint
+
+ Ansible Lint checks playbooks for practices and behavior that could potentially be improved.
+
+ 
 
 == Developer Tools
 
