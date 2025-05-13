@@ -1,5 +1,9 @@
 = Creating Python Environments
 
+== Python Environment
+
+A Python Virtual Environment is an isolated area where you can seperate lython libaries with other system libraries.
+
 == Create a python environment 
 
 ```
@@ -8,6 +12,8 @@ python -m pip install --user virtualenv
 ```
 
 === Install the Ansible Developer Tools
+
+Ansible Developer Tools is a combination of python package that provides an easy way to install and discover the best tools available to create and test ansible content.
 
 ```
 virtualenv ansible_dev
@@ -21,4 +27,3 @@ python3 -m pip install ansible-dev-tools
 ansible-galaxy collection init ansible_dev.my_code
 ```
 
-== 
